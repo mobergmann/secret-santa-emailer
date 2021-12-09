@@ -12,6 +12,7 @@ import getpass
 import smtplib
 import argparse
 
+
 class SecretSanta:
     pass
 
@@ -36,7 +37,8 @@ def load_config() -> dict:
             raise str
 
     # setup argparse and get keylog path
-    parser = argparse.ArgumentParser(description="a script, which calculates secret santas and informs the user via email")
+    parser = argparse.ArgumentParser(description="a script, which draws for each user a secret santas"
+                                                 " and informs the santa which user it drew")
     parser.add_argument("config_path", type=is_file,
                         help="Path to the config json file, which stores the santas")
     args = parser.parse_args()
@@ -66,6 +68,7 @@ def extract_users(config: dict) -> list[SecretSanta]:
     :param config: parsed file
     :return: list containing the santas
     """
+
     santas = []
 
     if 0:
