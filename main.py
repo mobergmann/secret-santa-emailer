@@ -142,12 +142,17 @@ def extract_users(config: "dict") -> "tuple[Sender, list[SecretSanta]]":
                         "At least two santas have to play the game (but it starts to make sense with 3+ santas)")
 
     # checking, that the emails are unique and printing warnings, if at least one name is unique
-    for santa_i in santas:
-        for santa_j in santas:
-            if santa_i.email == santa_j.email:
-                raise Exception(f"The email {santa_i.email} has been referenced twice.")
-            if santa_i.name == santa_j.name:
-                print(f"WARNING: The username \"{santa_i.name}\" has been used multiple times."
+    for i in range(len(santas)):
+        for j in range(len(santas)):
+            # skip entry's, where entries are equal
+            if i == j:
+                continue
+            # check weather if emails is equal
+            if santas[i].email == santas[j].email:
+                raise Exception(f"The email {santas[i].email} has been referenced twice.")
+            # check weather if usernames is equal
+            if santas[i].name == santas[j].name:
+                print(f"WARNING: The username \"{santas[i].name}\" has been used multiple times."
                       f"Please make sure, that none gets confused.")
 
     return sender, santas
