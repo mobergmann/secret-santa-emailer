@@ -22,7 +22,7 @@ class SecretSanta:
 
     def __str__(self) -> str:
         return f"Name: {self.name}, Email: {self.email}"
-    
+
     def __eq__(self, __o: object) -> bool:
         if isinstance(__o, self.__class__):
             return __o.name == self.name and __o.email == self.email
@@ -34,20 +34,20 @@ class SecretSanta:
 
 class Sender:
     address: str  # address of the sender server
-    email: str    # email address, from which messages are beeing send
-    port: int     # port, on which the server should listen
+    email: str  # email address, from which messages are beeing send
+    port: int  # port, on which the server should listen
 
     def __init__(self, address, email, port) -> None:
         self.address = address
         self.email = email
         self.port = port
-    
+
     def __str__(self) -> str:
         return f"Email: {self.email}, Server Address: {self.email}, Port: {self.port}"
-    
+
     def __eq__(self, __o: object) -> bool:
         if isinstance(__o, self.__class__):
-            return __o.address == self.address and __o.email == self.email and __o.port == self.port 
+            return __o.address == self.address and __o.email == self.email and __o.port == self.port
         return False
 
     def __hash__(self):
@@ -70,7 +70,7 @@ def setup_argparse() -> str:
         if os.path.exists(path) and os.path.isfile(path):
             return path
         else:
-            raise str
+            raise Exception("Provided path doesn\'t exists")
 
     # setup argparse and get path
     parser = argparse.ArgumentParser(
@@ -92,12 +92,21 @@ def load_config(path: str) -> "dict[str, all]":
     :return: dict containing the users
     """
 
-    # read provided file
-    with open(path, "r") as f:
-        raw = f.read()
+    try:
+        # read provided file
+        with open(path, "r") as f:
+            raw = f.read()
+    except Exception as e:
+        raise Exception(f"Unable to open and read {path}.")
+
+    try:
+        # parse to dict and interpret as json
+        parsed = json.loads(raw)
+    except Exception as e:
+        raise Exception("The provided json file is not well formatted. Please see the README.md for more information.")
 
     # interpret as json
-    return json.loads(raw)
+    return parsed
 
 
 def extract_users(config: "dict") -> "tuple[Sender, list[SecretSanta]]":
@@ -107,29 +116,39 @@ def extract_users(config: "dict") -> "tuple[Sender, list[SecretSanta]]":
     :param config: parsed file
     :return: list containing the santas
     """
-    
-    # extract sender info and save as object in memory
-    sender = Sender(
-        address=config["sender"]["address"],
-        email=config["sender"]["email"],
-        port=config["sender"]["port"]
-    )
 
-    # extract santas
-    santas = []
-    for s in config["santas"]:
-        santa = SecretSanta(
-            s["name"],
-            s["email"]
+    try:
+        # extract sender info and save as object in memory
+        sender = Sender(
+            address=config["sender"]["address"],
+            email=config["sender"]["email"],
+            port=config["sender"]["port"]
         )
-        santas.append(santa)
-    
-    # todo check, that no email and name are equal
 
-    # Raise an error, when the input is invalid formatted
-    if 0:
-        print("", file=sys.stderr)
-        raise "InvalidInputError()"
+        # extract santas
+        santas = []
+        for s in config["santas"]:
+            santa = SecretSanta(
+                s["name"],
+                s["email"]
+            )
+            santas.append(santa)
+    except Exception as e:
+        raise Exception("The provided json file is not well formatted. Please see the README.md for more information.")
+
+    # the minimal number of santas is two
+    if len(santas) <= 1:
+        raise Exception(f"Only {len(santas)} santa has been provided. "
+                        "At least two santas have to play the game (but it starts to make sense with 3+ santas)")
+
+    # checking, that the emails are unique and printing warnings, if at least one name is unique
+    for santa_i in santas:
+        for santa_j in santas:
+            if santa_i.email == santa_j.email:
+                raise Exception(f"The email {santa_i.email} has been referenced twice.")
+            if santa_i.name == santa_j.name:
+                print(f"WARNING: The username \"{santa_i.name}\" has been used multiple times."
+                      f"Please make sure, that none gets confused.")
 
     return sender, santas
 
@@ -140,14 +159,12 @@ def shuffle_santas(santas: list) -> "dict[SecretSanta, SecretSanta]":
     :param santas: list of santas
     :return: dictionary, where a santa references another santa
     """
-    
+
     def constraint(key_santas: "list[SecretSanta]", value_santas: "list[SecretSanta]") -> bool:
         """
         Checks that in two given lists no equal values have the same index:
         first_arr[i] != second_arr[i]
         """
-
-        # todo min number of secret santas
 
         for i in range(len(key_santas)):
             if key_santas[i] == value_santas[i]:
@@ -156,16 +173,16 @@ def shuffle_santas(santas: list) -> "dict[SecretSanta, SecretSanta]":
 
     # setup assigned santas
     assigned_santas = santas.copy()
-    
+
     # shuffle the santas until no equal santas share the same index
     while not constraint(santas, assigned_santas):
         random.shuffle(assigned_santas)
-    
+
     # convert assigned santas and other santas to dict
     santa_dict = {}
     for i in range(len(santas)):
         santa_dict[santas[i]] = assigned_santas[i]
-        
+
     return santa_dict
 
 
@@ -197,50 +214,62 @@ def send_santa_invitations(sender: Sender, password: str, santas: "dict[SecretSa
 
         return message
 
-    # Create a secure SSL context
-    context = ssl.SSLContext(ssl.PROTOCOL_TLS)
+    try:
+        # Create a secure SSL context
+        context = ssl.SSLContext(ssl.PROTOCOL_TLS)
 
-    # setup smtp for sending mails
-    with smtplib.SMTP(sender.address, sender.port) as server:
-        server.ehlo()
+    except Exception as e:
+        raise Exception("Coule not load protocol. Please enable it.")
 
-        # secure connection using starttls
-        server.starttls(context=context)
+    try:
+        # setup smtp for sending mails
+        with smtplib.SMTP(sender.address, sender.port) as server:
+            server.ehlo()
 
-        server.ehlo()
+            # secure connection using starttls
+            server.starttls(context=context)
 
-        # login to server
-        server.login(sender.email, password)
+            server.ehlo()
 
-        # send all mails to every santa
-        for santa in santas:
-            msg = construct_message(santas[santa], santa)
-            server.send_message(msg)
+            # login to server
+            server.login(sender.email, password)
+
+            # send all mails to every santa
+            for santa in santas:
+                msg = construct_message(santas[santa], santa)
+                server.send_message(msg)
+
+    except Exception as e:
+        raise Exception("Error while sending at least one email.")
 
 
 def main():
-    print("Getting Arguments...")
-    config_path = setup_argparse()
-    print("Done\n")
+    try:
+        print("Getting Arguments...")
+        config_path = setup_argparse()
+        print("Done\n")
 
-    print("Parsing configuration...")
-    config = load_config(config_path)
-    print("Done\n")
+        print("Parsing configuration...")
+        config = load_config(config_path)
+        print("Done\n")
 
-    print("Extracting Santas...")
-    sender, santas = extract_users(config)
-    print("Done\n")
+        print("Extracting Santas...")
+        sender, santas = extract_users(config)
+        print("Done\n")
 
-    print("Calculating Santas...")
-    santas = shuffle_santas(santas)
-    print("Done\n")
+        print("Calculating Santas...")
+        santas = shuffle_santas(santas)
+        print("Done\n")
 
-    # read the credentials for sending the emails
-    password = getpass.getpass("Please enter the password for your email address: ")
+        # read the credentials for sending the emails
+        password = getpass.getpass("Please enter the password for your email address: ")
 
-    print("Sending email notifications...")
-    send_santa_invitations(sender, password, santas)
-    print("Done\n")
+        print("Sending email notifications...")
+        send_santa_invitations(sender, password, santas)
+        print("Done\n")
+
+    except Exception as e:
+        print("ERROR:", e, file=sys.stderr)
 
 
 if __name__ == "__main__":
