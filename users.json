@@ -1,0 +1,21 @@
+{
+    "sender": {
+        "email": "mobergmann@uos.de",
+        "address": "",
+        "port": 0
+    },
+    "santas": [
+        {
+            "name": "Person A",
+            "email": "mr.molitz@gmail.com"
+        },
+        {
+            "name": "Person B",
+            "email": "mobergmann@pm.me"
+        },
+        {
+            "name": "Person C",
+            "email": "lalueking@uos.de"
+        }
+    ]
+}
