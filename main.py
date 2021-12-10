@@ -1,17 +1,15 @@
-"""
-links with infos to email sending:
-    - https://realpython.com/python-send-email/
-    - https://docs.python.org/3/library/email.examples.html
-"""
-
 import os
 import sys
 import ssl
 import json
+import email
 import random
 import getpass
 import smtplib
 import argparse
+import email.utils
+import email.policy
+from email.message import EmailMessage
 
 
 class SecretSanta:
@@ -58,7 +56,7 @@ class Sender:
 
 def setup_argparse() -> str:
     """
-    Configures argparse to accept path to files and returns the path
+    Configures argparse to accept path to files and returns the path.
     :return: path to the config file
     """
 
@@ -90,7 +88,7 @@ def setup_argparse() -> str:
 def load_config(path: str) -> "dict[str, all]":
     """
     Loads a config file which must be given by the first argument,
-    reads the file and parses it (must be json format)
+    reads the file and parses it (must be json format).
     :return: dict containing the users
     """
 
@@ -105,7 +103,7 @@ def load_config(path: str) -> "dict[str, all]":
 def extract_users(config: "dict") -> "tuple[Sender, list[SecretSanta]]":
     """
     Extracts the secret santas from the parsed file.
-    Terminates if the input is invalid
+    Terminates if the input is invalid.
     :param config: parsed file
     :return: list containing the santas
     """
@@ -138,7 +136,7 @@ def extract_users(config: "dict") -> "tuple[Sender, list[SecretSanta]]":
 
 def shuffle_santas(santas: list) -> "dict[SecretSanta, SecretSanta]":
     """
-    Shuffles a list of santas, so that a santa did not draw itself
+    Shuffles a list of santas, so that a santa did not draw itself.
     :param santas: list of santas
     :return: dictionary, where a santa references another santa
     """
@@ -173,7 +171,7 @@ def shuffle_santas(santas: list) -> "dict[SecretSanta, SecretSanta]":
 
 def send_santa_invitations(sender: Sender, password: str, santas: "dict[SecretSanta, SecretSanta]") -> None:
     """
-    Sends an email to every santa, with the name of the santa it drew
+    Sends an email to every santa, with the name of the santa it drew.
     :param sender: sender object used for creating the server
     :param password: password used for authenticating the server
     :param santas: dict of santas, with reference which user it drew
@@ -182,28 +180,42 @@ def send_santa_invitations(sender: Sender, password: str, santas: "dict[SecretSa
 
     def construct_message(recipient: SecretSanta, sender: SecretSanta):
         """
-        todo
-        :param recipient:
-        :param sender:
+        Constructs a message to the recipient from the sender.
+        The sender email address in the Header is changed to fit the theme.
+        :param recipient: email recipient
+        :param sender: email account, from which the emails are being send
         :return:
         """
 
-        return f"Subject: {recipient.name}" \
-               "\n" \
-               "\n" \
-               f"Test Message, your sender is {sender.name}"
+        message = EmailMessage(email.policy.SMTP)
+        message["To"] = recipient.email
+        message["From"] = "santa.claus@north.pole"
+        message["Subject"] = "The Secret Santas were drawn!"
+        message["Date"] = email.utils.formatdate(localtime=True)
+        message["Message-ID"] = email.utils.make_msgid()
+        message.set_content(f"You ({sender.name}) need to gift {recipient.name}")
+
+        return message
 
     # Create a secure SSL context
-    context = ssl.create_default_context()
+    context = ssl.SSLContext(ssl.PROTOCOL_TLS)
 
-    # todo
-    with smtplib.SMTP_SSL(sender.address, sender.port, context=context) as server:
+    # setup smtp for sending mails
+    with smtplib.SMTP(sender.address, sender.port) as server:
+        server.ehlo()
+
+        # secure connection using starttls
+        server.starttls(context=context)
+
+        server.ehlo()
+
         # login to server
         server.login(sender.email, password)
-        
+
         # send all mails to every santa
         for santa in santas:
-            server.sendmail(sender.email, santa.email, construct_message(santas[santa], santa))
+            msg = construct_message(santas[santa], santa)
+            server.send_message(msg)
 
 
 def main():
@@ -233,4 +245,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
