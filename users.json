@@ -1,21 +1,21 @@
 {
     "sender": {
-        "email": "mobergmann@uos.de",
-        "address": "",
-        "port": 0
+        "email": "santa.claus@nord.pol",
+        "address": "localhost",
+        "port": 465
     },
     "santas": [
         {
             "name": "Person A",
-            "email": "mr.molitz@gmail.com"
+            "email": "wichtel-beta-1+mobergmann@pm.me"
         },
         {
             "name": "Person B",
-            "email": "mobergmann@pm.me"
+            "email": "wichtel-beta-2+mobergmann@pm.me"
         },
         {
             "name": "Person C",
-            "email": "lalueking@uos.de"
+            "email": "wichtel-beta-3+mobergmann@pm.me"
         }
     ]
 }

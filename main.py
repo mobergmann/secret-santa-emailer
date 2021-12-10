@@ -30,6 +30,9 @@ class SecretSanta:
             return __o.name == self.name and __o.email == self.email
         return False
 
+    def __hash__(self):
+        return hash((self.name, self.email))
+
 
 class Sender:
     address: str  # address of the sender server
@@ -49,12 +52,16 @@ class Sender:
             return __o.address == self.address and __o.email == self.email and __o.port == self.port 
         return False
 
+    def __hash__(self):
+        return hash((self.address, self.email, self.port))
 
-def setup_argparse():
+
+def setup_argparse() -> str:
     """
-    todo
+    Configures argparse to accept path to files and returns the path
+    :return: path to the config file
     """
-    
+
     def is_file(path: str) -> str:
         """
         Checks weather a given string is a valid path.
@@ -67,19 +74,23 @@ def setup_argparse():
         else:
             raise str
 
-    # setup argparse and get keylog path
-    parser = argparse.ArgumentParser(description="a script, which draws for each user a secret santas"
-                                                 " and informs the santa which user it drew")
-    parser.add_argument("config_path", type=is_file,
-                        help="Path to the config json file, which stores the santas")
+    # setup argparse and get path
+    parser = argparse.ArgumentParser(
+        description="a script, which draws for each user a secret santas and informs the santa which user it drew")
+    parser.add_argument(
+        "config_path",
+        type=is_file,
+        help="Path to the config json file, which stores the santas")
     args = parser.parse_args()
     path = args.config_path
+
+    return path
 
 
 def load_config(path: str) -> "dict[str, all]":
     """
-    loads a config file from, which must be given by argument,
-    reads the file and parses it as json
+    Loads a config file which must be given by the first argument,
+    reads the file and parses it (must be json format)
     :return: dict containing the users
     """
 
@@ -91,9 +102,9 @@ def load_config(path: str) -> "dict[str, all]":
     return json.loads(raw)
 
 
-def extract_users(config: "dict") -> "list[SecretSanta]":
+def extract_users(config: "dict") -> "tuple[Sender, list[SecretSanta]]":
     """
-    extracts the secret santas from the parsed file.
+    Extracts the secret santas from the parsed file.
     Terminates if the input is invalid
     :param config: parsed file
     :return: list containing the santas
@@ -135,16 +146,18 @@ def shuffle_santas(santas: list) -> "dict[SecretSanta, SecretSanta]":
     def constraint(key_santas: "list[SecretSanta]", value_santas: "list[SecretSanta]") -> bool:
         """
         Checks that in two given lists no equal values have the same index:
-        fisrt_arr[i] != second_arr[i]
+        first_arr[i] != second_arr[i]
         """
-        
+
+        # todo min number of secret santas
+
         for i in range(len(key_santas)):
             if key_santas[i] == value_santas[i]:
                 return False
         return True
 
     # setup assigned santas
-    assigned_santas: santas.copy()
+    assigned_santas = santas.copy()
     
     # shuffle the santas until no equal santas share the same index
     while not constraint(santas, assigned_santas):
@@ -158,47 +171,66 @@ def shuffle_santas(santas: list) -> "dict[SecretSanta, SecretSanta]":
     return santa_dict
 
 
-def send_santa_invitations(santas: "dict[SecretSanta, SecretSanta]", sender_config: dict, password: str):
+def send_santa_invitations(sender: Sender, password: str, santas: "dict[SecretSanta, SecretSanta]") -> None:
     """
     Sends an email to every santa, with the name of the santa it drew
-    :param santas: list of santas
+    :param sender: sender object used for creating the server
+    :param password: password used for authenticating the server
+    :param santas: dict of santas, with reference which user it drew
     :return: None
     """
 
-    # todo
-    def construct_message(recipiant: SecretSanta, sender: SecretSanta):
-        return "Subject: {recipiant.name}\n\nTest Message, your sender is {sender.name}"
+    def construct_message(recipient: SecretSanta, sender: SecretSanta):
+        """
+        todo
+        :param recipient:
+        :param sender:
+        :return:
+        """
+
+        return f"Subject: {recipient.name}" \
+               "\n" \
+               "\n" \
+               f"Test Message, your sender is {sender.name}"
 
     # Create a secure SSL context
     context = ssl.create_default_context()
 
     # todo
-    with smtplib.SMTP_SSL(sender_config["address"], sender_config["port"], context=context) as server:        
+    with smtplib.SMTP_SSL(sender.address, sender.port, context=context) as server:
         # login to server
-        server.login(sender_config["email"], password)
+        server.login(sender.email, password)
         
-        # send all mails to the santas
+        # send all mails to every santa
         for santa in santas:
-            server.sendmail(sender_config["email"], santa.email, construct_message(santas[santa], santa))
+            server.sendmail(sender.email, santa.email, construct_message(santas[santa], santa))
 
 
 def main():
+    print("Getting Arguments...")
     config_path = setup_argparse()
-    
+    print("Done\n")
+
+    print("Parsing configuration...")
     config = load_config(config_path)
+    print("Done\n")
 
+    print("Extracting Santas...")
     sender, santas = extract_users(config)
-    
-    santas = shuffle_santas(santas)
+    print("Done\n")
 
-    for s in santas:
-        print(s, s[s])
+    print("Calculating Santas...")
+    santas = shuffle_santas(santas)
+    print("Done\n")
 
     # read the credentials for sending the emails
-    # password = getpass.getpass("Password for your email address")
+    password = getpass.getpass("Please enter the password for your email address: ")
 
+    print("Sending email notifications...")
     send_santa_invitations(sender, password, santas)
+    print("Done\n")
 
 
 if __name__ == "__main__":
     main()
+
