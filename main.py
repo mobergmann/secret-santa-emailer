@@ -215,7 +215,7 @@ def send_santa_invitations(sender: Sender, password: str, santas: "dict[SecretSa
         message["Subject"] = "The Secret Santas were drawn!"
         message["Date"] = email.utils.formatdate(localtime=True)
         message["Message-ID"] = email.utils.make_msgid()
-        message.set_content(f"You ({sender.name}) need to gift {recipient.name}")
+        message.set_content(f"You ({sender.name}) have to gift {recipient.name}")
 
         return message
 
