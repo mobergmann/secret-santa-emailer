@@ -61,3 +61,9 @@ As there is no way to escape this functionality, be sure not to write these code
 ## Newlines in email body
 To insert newlines into the body of the email just write an `\n` instead of the multiline.
 The whole body in the json must be a single line.
+
+
+## Running the Program
+To run the program add an appropriate json file (see #Look of a json).
+You need to have python3 installed.  
+Then you can launch the program with `python3 main.py <path to json>`
