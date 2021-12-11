@@ -33,14 +33,18 @@ class SecretSanta:
 
 
 class Sender:
-    address: str  # address of the sender server
-    email: str  # email address, from which messages are beeing send
-    port: int  # port, on which the server should listen
+    address: str    # address of the sender server
+    email: str      # email address, from which messages are being send
+    port: int       # port, on which the server should listen
+    subject: str    # subject of the email
+    body: str       # body of the email
 
-    def __init__(self, address, email, port) -> None:
+    def __init__(self, address: str, email: str, port: int, subject: str, body: str) -> None:
         self.address = address
         self.email = email
         self.port = port
+        self.subject = subject
+        self.body = body
 
     def __str__(self) -> str:
         return f"Email: {self.email}, Server Address: {self.email}, Port: {self.port}"
@@ -109,12 +113,12 @@ def load_config(path: str) -> "dict[str, all]":
     return parsed
 
 
-def extract_users(config: "dict") -> "tuple[Sender, list[SecretSanta]]":
+def extract_config(config: "dict") -> "tuple[Sender, list[SecretSanta]]":
     """
-    Extracts the secret santas from the parsed file.
+    Extracts the sender and the secret santas from the parsed file.
     Terminates if the input is invalid.
     :param config: parsed file
-    :return: list containing the santas
+    :return: tuple containing a Sender object and a list of SecretSanta
     """
 
     try:
@@ -122,7 +126,9 @@ def extract_users(config: "dict") -> "tuple[Sender, list[SecretSanta]]":
         sender = Sender(
             address=config["sender"]["address"],
             email=config["sender"]["email"],
-            port=config["sender"]["port"]
+            port=config["sender"]["port"],
+            subject=config["sender"]["subject"],
+            body=config["sender"]["body"]
         )
 
         # extract santas
@@ -203,22 +209,42 @@ def send_santa_invitations(sender: Sender, password: str, santas: "dict[SecretSa
     :return: None
     """
 
-    def construct_message(santa: SecretSanta, recipient: SecretSanta) -> EmailMessage:
+    def construct_message(santa: SecretSanta, recipient: SecretSanta, sender: Sender) -> EmailMessage:
         """
         Constructs a message to the recipient from the sender.
         The sender email address in the Header is changed to fit the theme.
         :param santa: santa, which drew the recipient
         :param recipient: recipient, which is being gifted by the santa
+        :param sender: Sender object
         :return: Message object with RFC 5322 formatted header
         """
+
+        def replace_reference(input: str, santa: SecretSanta, recipient: SecretSanta):
+            """
+            Replaces from an input string all occurrence of special codes (see README.md)
+            :param input: the input string
+            :param santa: Secret Santa, who has to gift someone
+            :param recipient: Secret Santa, who is being gifted
+            :return: input string, with the special codes being replaced with the according variables
+            """
+
+            output = input.replace("{santa.name}", santa.name)\
+                .replace("{santa.email}", santa.email)\
+                .replace("{recipient.name}", recipient.name)\
+                .replace("{recipient.email}", recipient.email)
+
+            return output
+
+        subject = replace_reference(sender.subject, santa, recipient)
+        body = replace_reference(sender.body, santa, recipient)
 
         message = EmailMessage(email.policy.SMTP)
         message["To"] = santa.email
         message["From"] = "santa.claus@north.pole"
-        message["Subject"] = "The Secret Santas were drawn!"
+        message["Subject"] = subject
         message["Date"] = email.utils.formatdate(localtime=True)
         message["Message-ID"] = email.utils.make_msgid()
-        message.set_content(f"You ({santa.name}) have to gift {recipient.name}")
+        message.set_content(body)
 
         return message
 
@@ -244,7 +270,7 @@ def send_santa_invitations(sender: Sender, password: str, santas: "dict[SecretSa
 
             # send all mails to every santa
             for santa in santas:
-                msg = construct_message(santa, santas[santa])
+                msg = construct_message(santa, santas[santa], sender)
                 server.send_message(msg)
 
     except Exception as e:
@@ -262,7 +288,7 @@ def main():
         print("Done\n")
 
         print("Extracting Santas...")
-        sender, santas = extract_users(config)
+        sender, santas = extract_config(config)
         print("Done\n")
 
         print("Calculating Santas...")
