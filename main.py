@@ -167,8 +167,11 @@ def shuffle_santas(santas: list) -> "dict[SecretSanta, SecretSanta]":
 
     def constraint(key_santas: "list[SecretSanta]", value_santas: "list[SecretSanta]") -> bool:
         """
-        Checks that in two given lists no equal values have the same index:
-        first_arr[i] != second_arr[i]
+        Checks that in two given lists no equal values have the same index: first_arr[i] != second_arr[i].
+        In order to function, len(key_santas) must be equal to len(value_santas).
+        :param key_santas: list of santas, who gift someone
+        :param value_santas: list of santas, who are being gifted
+        :return: true if the constraint is valid, false otherwise
         """
 
         for i in range(len(key_santas)):
@@ -200,22 +203,22 @@ def send_santa_invitations(sender: Sender, password: str, santas: "dict[SecretSa
     :return: None
     """
 
-    def construct_message(recipient: SecretSanta, sender: SecretSanta):
+    def construct_message(santa: SecretSanta, recipient: SecretSanta) -> EmailMessage:
         """
         Constructs a message to the recipient from the sender.
         The sender email address in the Header is changed to fit the theme.
-        :param recipient: email recipient
-        :param sender: email account, from which the emails are being send
-        :return:
+        :param santa: santa, which drew the recipient
+        :param recipient: recipient, which is being gifted by the santa
+        :return: Message object with RFC 5322 formatted header
         """
 
         message = EmailMessage(email.policy.SMTP)
-        message["To"] = recipient.email
+        message["To"] = santa.email
         message["From"] = "santa.claus@north.pole"
         message["Subject"] = "The Secret Santas were drawn!"
         message["Date"] = email.utils.formatdate(localtime=True)
         message["Message-ID"] = email.utils.make_msgid()
-        message.set_content(f"You ({sender.name}) have to gift {recipient.name}")
+        message.set_content(f"You ({santa.name}) have to gift {recipient.name}")
 
         return message
 
@@ -224,7 +227,7 @@ def send_santa_invitations(sender: Sender, password: str, santas: "dict[SecretSa
         context = ssl.SSLContext(ssl.PROTOCOL_TLS)
 
     except Exception as e:
-        raise Exception("Coule not load protocol. Please enable it.")
+        raise Exception("Coule not load protocol. Please enable/ install it.")
 
     try:
         # setup smtp for sending mails
@@ -241,7 +244,7 @@ def send_santa_invitations(sender: Sender, password: str, santas: "dict[SecretSa
 
             # send all mails to every santa
             for santa in santas:
-                msg = construct_message(santas[santa], santa)
+                msg = construct_message(santa, santas[santa])
                 server.send_message(msg)
 
     except Exception as e:
@@ -263,14 +266,15 @@ def main():
         print("Done\n")
 
         print("Calculating Santas...")
-        santas = shuffle_santas(santas)
+        santas_assigned = shuffle_santas(santas)
         print("Done\n")
 
         # read the credentials for sending the emails
         password = getpass.getpass("Please enter the password for your email address: ")
+        print()
 
         print("Sending email notifications...")
-        send_santa_invitations(sender, password, santas)
+        send_santa_invitations(sender, password, santas_assigned)
         print("Done\n")
 
     except Exception as e:
