@@ -163,34 +163,21 @@ def extract_config(config: "dict") -> "tuple[Sender, list[SecretSanta]]":
 
     return sender, santas
 
-
 def shuffle_santas(santas: list) -> "dict[SecretSanta, SecretSanta]":
     """
     Shuffles a list of santas, so that a santa did not draw itself.
     :param santas: list of santas
     :return: dictionary, where a santa references another santa
     """
+    # shuffle santas
+    random.shuffle(santas)
 
-    def constraint(key_santas: "list[SecretSanta]", value_santas: "list[SecretSanta]") -> bool:
-        """
-        Checks that in two given lists no equal values have the same index: first_arr[i] != second_arr[i].
-        In order to function, len(key_santas) must be equal to len(value_santas).
-        :param key_santas: list of santas, who gift someone
-        :param value_santas: list of santas, who are being gifted
-        :return: true if the constraint is valid, false otherwise
-        """
-
-        for i in range(len(key_santas)):
-            if key_santas[i] == value_santas[i]:
-                return False
-        return True
-
-    # setup assigned santas
+    # copy santas
     assigned_santas = santas.copy()
 
-    # shuffle the santas until no equal santas share the same index
-    while not constraint(santas, assigned_santas):
-        random.shuffle(assigned_santas)
+    s = assigned_santas.pop(0)
+
+    assigned_santas.append(s)
 
     # convert assigned santas and other santas to dict
     santa_dict = {}
