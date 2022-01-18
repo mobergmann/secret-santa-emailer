@@ -163,6 +163,7 @@ def extract_config(config: "dict") -> "tuple[Sender, list[SecretSanta]]":
 
     return sender, santas
 
+
 def shuffle_santas(santas: list) -> "dict[SecretSanta, SecretSanta]":
     """
     Shuffles a list of santas, so that a santa did not draw itself.
@@ -176,7 +177,6 @@ def shuffle_santas(santas: list) -> "dict[SecretSanta, SecretSanta]":
     assigned_santas = santas.copy()
 
     s = assigned_santas.pop(0)
-
     assigned_santas.append(s)
 
     # convert assigned santas and other santas to dict
