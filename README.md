@@ -13,7 +13,7 @@ A python application, which calculates secret santas and informs the user via em
         "subject": "",
         "body": ""
     },
-    "users": [
+    "santas": [
         {
             "name": "",
             "email": ""
