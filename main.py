@@ -236,13 +236,6 @@ def send_santa_invitations(sender: Sender, password: str, santas: "dict[SecretSa
         return message
 
     try:
-        # Create a secure SSL context
-        context = ssl.SSLContext(ssl.PROTOCOL_TLS)
-
-    except Exception as e:
-        raise Exception("Coule not load protocol. Please enable/ install it.")
-
-    try:
         # setup smtp for sending mails
         with smtplib.SMTP_SSL(sender.address, sender.port) as server:
             # login to server
