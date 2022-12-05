@@ -16,7 +16,7 @@ class SecretSanta:
     name: str
     email: str
 
-    def __init__(self, name, email) -> None:
+    def __init__(self, name: str, email: str) -> None:
         self.name = name
         self.email = email
 
@@ -74,7 +74,7 @@ def setup_argparse() -> str:
         if os.path.exists(path) and os.path.isfile(path):
             return path
         else:
-            raise Exception("Provided path doesn\'t exists")
+            raise Exception("Provided path doesn't exists")
 
     # setup argparse and get path
     parser = argparse.ArgumentParser(
@@ -89,7 +89,7 @@ def setup_argparse() -> str:
     return path
 
 
-def load_config(path: str) -> "dict[str, all]":
+def load_config(path: str) -> dict[str, all]:
     """
     Loads a config file which must be given by the first argument,
     reads the file and parses it (must be json format).
@@ -113,7 +113,7 @@ def load_config(path: str) -> "dict[str, all]":
     return parsed
 
 
-def extract_config(config: "dict") -> "tuple[Sender, list[SecretSanta]]":
+def extract_config(config: dict) -> tuple[Sender, list[SecretSanta]]:
     """
     Extracts the sender and the secret santas from the parsed file.
     Terminates if the input is invalid.
@@ -164,7 +164,7 @@ def extract_config(config: "dict") -> "tuple[Sender, list[SecretSanta]]":
     return sender, santas
 
 
-def shuffle_santas(santas: list) -> "dict[SecretSanta, SecretSanta]":
+def shuffle_santas(santas: list) -> dict[SecretSanta, SecretSanta]:
     """
     Shuffles a list of santas, so that a santa did not draw itself.
     :param santas: list of santas
@@ -187,7 +187,7 @@ def shuffle_santas(santas: list) -> "dict[SecretSanta, SecretSanta]":
     return santa_dict
 
 
-def send_santa_invitations(sender: Sender, password: str, santas: "dict[SecretSanta, SecretSanta]") -> None:
+def send_santa_invitations(sender: Sender, password: str, santas: dict[SecretSanta, SecretSanta]) -> None:
     """
     Sends an email to every santa, with the name of the santa it drew.
     :param sender: sender object used for creating the server
