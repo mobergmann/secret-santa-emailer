@@ -237,15 +237,17 @@ def send_santa_invitations(sender: Sender, password: str, santas: dict[SecretSan
 
     try:
         # setup smtp for sending mails
-        with smtplib.SMTP_SSL(sender.address, sender.port) as server:
+        with smtplib.SMTP(sender.address, sender.port) as smtp:
             # login to server
-            server.login(sender.email, password)
+            context = ssl.create_default_context()
+            smtp.starttls(context=context)
+            smtp.login(sender.email, password)
 
             # send all mails to every santa
             for santa in santas:
                 print(f"Sending email to {santa.name}: {santa.email} ...")
                 msg = construct_message(santa, santas[santa], sender)
-                server.send_message(msg)
+                smtp.send_message(msg)
 
     except Exception as e:
         raise Exception("Error while sending at least one email.", e)
