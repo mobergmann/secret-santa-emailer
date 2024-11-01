@@ -227,7 +227,7 @@ def send_santa_invitations(sender: Sender, password: str, santas: dict[SecretSan
 
         message = EmailMessage(email.policy.SMTP)
         message["To"] = santa.email
-        message["From"] = "santa.claus@north.pole"
+        message["From"] = sender.email
         message["Subject"] = subject
         message["Date"] = email.utils.formatdate(localtime=True)
         message["Message-ID"] = email.utils.make_msgid()
